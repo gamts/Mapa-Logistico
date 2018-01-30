@@ -1,0 +1,57 @@
+<html>
+<head>
+	<meta charset="utf-8" >
+	<!-- <script src="scripts/jquery.js"></script> -->
+	<!-- <script src="scripts/jquery.flot.js"></script> -->
+	<script src="http://www.flotcharts.org/flot/jquery.js" ></script>
+	<script src="http://www.flotcharts.org/flot/jquery.flot.js"></script>
+<head>
+<body>
+
+<div id="graf1" style="width:1000px; height:600px"></div>
+
+<script>
+
+	var MAX = 1000; //máximo de iterações
+	var MAX_B = 4.0;
+	var bo = 2.9;
+	
+	var delta = 0.005;
+
+		
+	var grafico = [];
+
+	for(var b=bo; b<MAX_B; b=b+delta) {
+		
+		var x = Math.random(); //x0
+		var aux = []; // matriz auxiliar
+			
+		aux.push(x);
+		
+		for (var n=1; n<MAX; n++) { //calcula MAX pontos para cada valor de b
+			
+			x = b*x*(1-x);
+			aux.push(x);
+		}
+
+		var qtdPontos = 200;
+		
+		//imprime os últimos qtdPontos
+		for (var i=0; i<qtdPontos; i++) { 
+			grafico.push( [b, aux.pop()] );
+		}
+	}
+	
+	//Opções de estilo do gráfico
+	var grOpt = {
+            points: { show: true, lineWidth: 1, radius:1 },
+            xaxis: { tickColor: "lightgray" },
+            yaxis: { tickColor: "lightgray" },
+            colors: ["green","blue","cyan"]
+        };
+	//desenha os gráficos
+	$.plot("#graf1", [grafico]  , grOpt );
+</script>
+
+</body>
+</html>

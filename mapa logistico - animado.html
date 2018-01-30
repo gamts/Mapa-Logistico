@@ -1,0 +1,259 @@
+<html>
+<head>
+	<meta charset="utf-8" >
+	<!-- <script src="scripts/jquery.js"></script> -->
+	<!-- <script src="scripts/jquery.flot.js"></script> -->
+	<script src="http://www.flotcharts.org/flot/jquery.js" ></script>
+	<script src="http://www.flotcharts.org/flot/jquery.flot.js"></script>
+<head>
+<body>
+
+<input type="button" value="Parar Timer" onClick="pauseTimer()" />
+<input type="button" value="+1" onClick="mapaLogistico()" />
+<input type="button" id="ligaTimer" value="Ligar Timer" onClick="ligaTimer()" />
+F5: Reiniciar
+<br><br>
+<table>
+	<tr align='center'>
+		<td>Xn+1</td>
+		<td>
+			Diagrama de Bifurcação
+			<div id="diagBifurcacao" style="width:400px; height:250px"></div>
+			r (parâmetro)
+		</td>
+		<td></td>
+		<td align='left'>
+			<p>Mapa Logístico</p>
+			<p>Xn+1 = r*Xn*(1-Xn)</p>
+
+			<div id="texto"></div>
+		</td>
+	</tr>
+	<tr align='center'>
+		<td>X</td>
+		<td>
+			Série
+			<div id="serie" style="width:400px; height:250px"></div>
+			No de Iterações
+		</td> 
+		<td>Y</td>
+		<td>
+			Diagrama de Retorno
+			<div id="diagRetorno" style="width:250px; height:250px"></div>
+			X
+		</td>
+		<td>
+			Período (* ???)
+			<div id="periodo" style="width:250px; height:250px"></div>
+		</td>
+	</tr>
+</table>	
+
+	
+
+
+
+
+
+<script>
+
+	//-----------------------------------------------------------------
+	//Opções de estilo do gráfico
+	var diagRetornoStyle = {
+        legend: { show: true, position: "ne" },
+        lines: 	{ show: true, lineWidth: 2 },
+        points: { show: false, lineWidth: 1, radius:1 },
+        xaxis:  { ticks: 5, tickColor: "lightgray", min: 0, max: 1, tickDecimals: 1 },
+        yaxis:  { ticks: 5, tickColor: "lightgray", min: 0, max: 1, tickDecimals: 1 },
+        //colors: ["red","green","blue","cyan"]
+        };
+    var serieStyle = {
+        legend: { show: true, position: "ne" },
+        lines: 	{ show: true, lineWidth: 1 },
+        points: { show: true, lineWidth: 1, radius:2 },
+        xaxis:  { tickColor: "lightgray"},
+        yaxis:  { ticks: 10, tickColor: "lightgray", tickDecimals: 1 },
+        colors: ["blue","cyan"]
+        };
+    var diagBifurcacaoStyle = {
+        legend: { show: true, position: "ne" },
+        lines: 	{ show: false, lineWidth: 1 },
+        points: { show: true, lineWidth: 2, radius:2 },
+        xaxis:  { show: true, ticks: 5, tickColor: "lightgray", tickDecimals: 1 },
+        yaxis:  { show: true, ticks: 5, tickColor: "lightgray", tickDecimals: 1 },
+        colors: ["cyan","blue","red"]
+        };
+
+    var periodoStyle = {
+        legend: { show: true, position: "ne" },
+        lines: 	{ show: true, lineWidth: 1 },
+        points: { show: true, lineWidth: 2, radius:2 },
+        xaxis:  { tickColor: "lightgray"},
+        yaxis:  { tickColor: "lightgray"},
+        colors: ["blue","cyan","red","green"]
+        };
+
+
+
+
+
+
+
+
+    //-----------------------------------------------------------------
+
+	var MAX = 1000; //máximo de iterações
+	var tolerancia = 1E-5;   //tolerância
+	var passo = 0.09;
+	var r = passo; 	//parâmetro
+	var rMAX = 4.0;
+	var tempoTimer = 100; //milisegundos
+	
+
+	var xo = Math.random(); // posição inicial no intervalo [0,1]
+
+	
+
+	var serie = [], // gráfico 2
+		periodo = [],
+		serieTemp = [],
+		perAtual = [],
+		diagBifurcacao = [], // Diagrama de Bifurcação
+		diagRetorno = []; // Diagrama de Retorno (inglês: cobweb)  linha azul
+		
+	var n = 0; //número de iterações
+	var t = ""; 
+	var flagFim; // true para reiniciar o loop com um novo parâmetro
+
+
+
+	//-----------------------------------------------------------------
+	//gráfico da função identidade: pontos (0,0) e (1,1);
+	var identidade = []; 
+	identidade[0] = [0,0];
+	identidade[1] = [1,1];
+
+	
+
+	//-----------------------------------------------------------------
+	// função do mapa logístico
+	function f(x) {
+		return r*x*(1-x);
+	}
+
+	
+
+	//-----------------------------------------------------------------
+	// gráfico da parábola no intervalo [0,1] para MAX=100 pontos
+	function g() {
+		var parabola = [];
+		var MAX = 100;
+		for (var i=0; i<MAX+1; i++) {
+			var x = i/MAX;
+			parabola[i] = [x, f(x)];
+		}
+		return parabola;
+	}
+	var parabola = g();
+
+	
+	
+	
+
+	//-----------------------------------------------------------------
+	function limpaGrafico() {
+		
+		t = "Posição inicial Xo: " + xo.toPrecision(3) + " (random)<br>" +
+			"Tolerância: " + tolerancia.toExponential(1) + "<br>" +
+			"Número de Iterações: " + n + "<br>" + 
+			"Parâmetro r: " + r + "<br>";
+
+		document.getElementById("texto").innerHTML = t;
+
+		n = 0;
+		r = r + passo;
+		if( r > rMAX ) { pauseTimer(); alert("FIM")}
+		
+		serieTemp = serieTemp.concat(perAtual);
+		periodo = [];
+		
+		for(var i=0; i<perAtual.length; i++) 
+			periodo[i] = [i, perAtual[i][1]];
+		
+		serie = [],
+		diagRetorno = [];
+		perAtual = [];
+		serie[n] = [n, xo];
+		diagRetorno[n] = [xo, n];
+		parabola = g();
+		flagFim = false;
+	}
+
+	
+	function imprimeGrafico() {
+		$.plot("#diagBifurcacao", [diagBifurcacao, perAtual, serieTemp] , diagBifurcacaoStyle );
+		$.plot("#periodo", [periodo] , periodoStyle);
+		$.plot("#serie", [serie] , serieStyle );
+		$.plot("#diagRetorno", [parabola,identidade,diagRetorno] , diagRetornoStyle );
+	}
+
+	
+	function buscaPeriodo (v) {
+		var max = v.length-1;
+		var x  = v[max][1]; //último valor do array
+		var k = 0; // número máximo de pontos em um período
+		for(var i=max-1; i>0; i--){
+			var xo = v[i][1]; // verifica com todos os valores anteriores
+			if( (Math.abs(x - xo) < tolerancia) ) { //testa se encontrou um período
+				k = (max -1) - i;
+				flagFim = true;
+				break;
+			}
+		}
+		var u = []; //retorna os pontos do período
+		for(var i=max-k, j=0; i<v.length; i++, j++)
+			u.push([r, v[i][1]]);
+		return u;
+	}
+
+	
+	function mapaLogistico() {
+		
+		if (flagFim) limpaGrafico();
+		n++;
+		var xo = serie[n-1][1]; //
+		var x = f(xo);
+		diagBifurcacao.push([r,x]);
+		serie.push([n, x]);
+		diagRetorno.push([xo, x]);
+		diagRetorno.push([x , x]);
+		perAtual = buscaPeriodo(serie);
+
+		imprimeGrafico(); //desenha os gráficos
+		
+		// imprime nova Linha De Gráficos
+		// (...)
+	}
+	
+	
+	limpaGrafico();
+	mapaLogistico();
+	var timer;
+
+	//timer = setInterval("mapaLogistico()",tempoTimer);
+
+
+	function pauseTimer() {
+		clearInterval(timer);
+	}
+
+	function ligaTimer() {
+		timer = setInterval("mapaLogistico()",tempoTimer);
+	}
+
+
+
+</script>
+
+</body>
+</html>
